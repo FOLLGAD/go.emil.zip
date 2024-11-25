@@ -1,18 +1,35 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { Hono } from 'hono';
 
-export default {
-	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
-	},
-} satisfies ExportedHandler<Env>;
+const app = new Hono<{
+	Bindings: Env;
+}>();
+
+app
+	.get('/', (c) => c.text('Welcome to go.emil.zip!'))
+	.get('/:id', async (c) => {
+		const id = c.req.param('id');
+		const url = await c.env.SHORTENER_STORE.get(id, {
+			cacheTtl: 1000 * 60 * 60 * 24 * 7,
+		});
+		if (!url) {
+			return c.notFound();
+		}
+		return c.redirect(url);
+	})
+	.post('/:id', async (c) => {
+		const id = c.req.param('id');
+		const { url, password } = await c.req.json<{ url: string; password: string }>();
+
+		if (!url) {
+			return c.json({ error: 'Missing url' }, 400);
+		}
+
+		if (!password || password !== c.env.ADMIN_PASSWORD) {
+			return c.json({ error: 'Invalid password' }, 401);
+		}
+
+		await c.env.SHORTENER_STORE.put(id, url);
+		return c.json({ id, url });
+	});
+
+export default app;
