@@ -8,6 +8,9 @@ routes = [
   { pattern = "go.emil.zip", custom_domain = true }
 ]
 
+[vars]
+POSTHOG_API_HOST = "https://data.emil.zip"
+
 # Workers Logs
 # Docs: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
 # Configuration: https://developers.cloudflare.com/workers/observability/logs/workers-logs/#enable-workers-logs

@@ -1,8 +1,29 @@
 import { Hono } from 'hono';
+import { PostHog } from 'posthog-node';
+import { getConnInfo } from 'hono/cloudflare-workers';
 
 const app = new Hono<{
 	Bindings: Env;
 }>();
+
+app.use(async (c, next) => {
+	const posthog = new PostHog(c.env.POSTHOG_API_KEY, {
+		host: c.env.POSTHOG_API_HOST,
+	});
+	const info = getConnInfo(c); // info is `ConnInfo`
+
+	posthog.capture({
+		distinctId: info.remote.address ?? 'unknown',
+		event: 'pageview',
+		properties: {
+			path: c.req.path,
+		},
+	});
+
+	await next();
+
+	await posthog.flush();
+});
 
 app
 	.get('/', async (c) => {

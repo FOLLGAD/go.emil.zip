@@ -2,5 +2,7 @@
 
 interface Env {
 	SHORTENER_STORE: KVNamespace;
+	POSTHOG_API_HOST: "https://data.emil.zip";
 	ADMIN_PASSWORD: string;
+	POSTHOG_API_KEY: string;
 }
