@@ -25,6 +25,11 @@ app.use(async (c, next) => {
 	await posthog.flush();
 });
 
+const failIfNotFound = (url: string | null) => {
+	if (url) return url;
+	throw new Error('Not found');
+};
+
 app
 	.get('/', async (c) => {
 		const results = await c.env.SHORTENER_STORE.list({ prefix: 'public/' });
@@ -58,11 +63,12 @@ app
 		const url = await Promise.any([
 			c.env.SHORTENER_STORE.get(id, {
 				cacheTtl: 1000 * 60 * 60 * 24 * 7,
-			}),
+			}).then(failIfNotFound),
 			c.env.SHORTENER_STORE.get('public/' + id, {
 				cacheTtl: 1000 * 60 * 60 * 24 * 7,
-			}),
+			}).then(failIfNotFound),
 		]);
+
 		if (!url) {
 			return c.notFound();
 		}
